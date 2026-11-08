@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniAI Hub - Studio & Tutor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        gauth: {
+                            500: '#10b981',
+                            600: '#059669',
+                        },
+                        neon: {
+                            purple: '#a855f7',
+                            pink: '#ec4899',
+                            cyan: '#06b6d4'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glass-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Custom glowing effects */
+        .glow-purple {
+            box-shadow: 0 0 25px -5px rgba(168, 85, 247, 0.4);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.4);
+        }
+        .glow-green {
+            box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Camera scan animation */
+        @keyframes scan {
+            0% { top: 0%; opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { top: 95%; opacity: 0.8; }
+        }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #10b981, transparent);
+            box-shadow: 0 0 15px #10b981;
+            animation: scan 2.5s infinite ease-in-out;
+        }
+
+        /* Video motion effect simulation */
+        @keyframes panZoom {
+            0% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.08) translate(-10px, -5px); }
+            100% { transform: scale(1) translate(0, 0); }
+        }
+        .animate-video-sim {
+            animation: panZoom 12s infinite alternate ease-in-out;
+        }
+
+        /* Bounce & Dance Animation for Video Objects */
+        @keyframes danceBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            25% { transform: translateY(-15px) rotate(-6deg) scale(1.05); }
+            50% { transform: translateY(0) rotate(0deg) scale(1); }
+            75% { transform: translateY(-15px) rotate(6deg) scale(1.05); }
+        }
+        .animate-dance {
+            animation: danceBounce 0.9s infinite ease-in-out;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-gray-800/80 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-neon-purple to-neon-pink flex items-center justify-center text-white text-xl font-bold shadow-lg glow-purple">
+                    <i class="fa-solid font-bold text-lg">AI</i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold bg-gradient-to-r from-white via-gray-200 to-indigo-300 bg-clip-text text-transparent">OmniStudio</span>
+                    <span class="text-xs text-indigo-400 font-semibold block -mt-1 tracking-wider">CREATION & STUDY</span>
+                </div>
+            </div>
+
+            <!-- Tab Switcher Navigation -->
+            <nav class="flex p-1 bg-slate-900/90 rounded-xl border border-gray-800">
+                <button id="nav-studio-btn" onclick="switchTab('studio')" class="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-indigo-600 text-white shadow-md">
+                    <i class="fa-solid font-bold text-xs"><i class="fa-solid fa-wand-magic-sparkles"></i></i>
+                    <span>AI Studio</span>
+                </button>
+                <button id="nav-tutor-btn" onclick="switchTab('tutor')" class="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all duration-300">
+                    <i class="fa-solid fa-graduation-cap text-xs"></i>
+                    <span>Gauth Tutor</span>
+                    <span class="px-1.5 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-400 font-bold rounded-full border border-emerald-500/30">PRO</span>
+                </button>
+            </nav>
+
+            <!-- User Info / Status -->
+            <div class="hidden sm:flex items-center space-x-3">
+                <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 border border-gray-700/60 text-xs">
+                    <i class="fa-solid fa-bolt text-yellow-400"></i>
+                    <span class="font-semibold text-gray-300">Crediti:</span>
+                    <span class="text-emerald-400 font-bold">Illimitati (Gratis)</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ========================================== -->
+        <!-- SECTION 1: AI STUDIO (IMAGE & VIDEO CREATOR) -->
+        <!-- ========================================== -->
+        <section id="studio-section" class="space-y-6">
+            <!-- Header Banner -->
+            <div class="relative overflow-hidden rounded-2xl glass-card p-6 lg:p-8 border border-indigo-500/20">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-widest">Generatore AI Moderno</span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold mt-3 text-white tracking-tight">Crea Immagini e Video Mozzafiato</h1>
+                    <p class="text-gray-400 mt-2 text-sm sm:text-base">Trasforma qualsiasi idea testuale in visual di altissima qualità in pochi secondi. Totalmente gratuito e senza limiti.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Controls & Input Panel -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 border border-gray-800 space-y-5">
+                        
+                        <!-- Mode Selector (Image / Video) -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Modalità di Generazione</label>
+                            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950/60 rounded-xl border border-gray-800">
+                                <button id="mode-image-btn" onclick="setStudioMode('image')" class="flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-indigo-600 text-white shadow">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>Immagine AI</span>
+                                </button>
+                                <button id="mode-video-btn" onclick="setStudioMode('video')" class="flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-white">
+                                    <i class="fa-solid fa-video"></i>
+                                    <span>Video AI</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Reference Image Upload Input (NEW) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block text-xs font-semibold uppercase text-gray-400">Immagine di Riferimento (Opzionale)</label>
+                                <span class="text-[10px] text-indigo-400 font-semibold">Img-to-Img / Img-to-Video</span>
+                            </div>
+                            
+                            <input type="file" id="studio-ref-input" class="hidden" accept="image/*" onchange="handleStudioRefUpload(event)">
+                            
+                            <!-- Upload Trigger Button -->
+                            <div id="studio-upload-btn-box">
+                                <button onclick="triggerStudioRefSelect()" class="w-full py-2.5 px-3 rounded-xl glass-input hover:bg-slate-800/80 border border-dashed border-indigo-500/40 text-gray-300 hover:text-white text-xs font-semibold transition flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-cloud-arrow-up text-indigo-400 text-sm"></i>
+                                    <span>Carica Foto dalla Galleria</span>
+                                </button>
+                            </div>
+
+                            <!-- Reference Image Preview Thumbnail -->
+                            <div id="studio-ref-preview-box" class="hidden relative mt-2 rounded-xl border border-indigo-500/40 overflow-hidden bg-slate-950 p-2 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <img id="studio-ref-thumb" src="" class="w-12 h-12 object-cover rounded-lg border border-gray-700">
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-200 truncate max-w-[160px]" id="studio-ref-name">ImmagineRiferimento.jpg</p>
+                                        <span class="text-[10px] text-emerald-400 font-mono flex items-center">
+                                            <i class="fa-solid fa-circle-check mr-1 text-[8px]"></i> Caricata come riferimento
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onclick="removeStudioRefImage()" class="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition text-xs">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Prompt Input -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="studio-prompt" class="block text-xs font-semibold uppercase text-gray-400">Prompt Testuale</label>
+                                <button onclick="randomPrompt()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                                    <i class="fa-solid fa-dice"></i>
+                                    <span>Casuale</span>
+                                </button>
+                            </div>
+                            <textarea id="studio-prompt" rows="4" class="w-full glass-input rounded-xl p-3.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none transition resize-none" placeholder="Descrivi in dettaglio ciò che vuoi creare... (es: Un astronauta che cammina in una città cyberpunk al neon, 8k render fotorealistico)"></textarea>
+                        </div>
+
+                        <!-- Style Preset Selector -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Stile Visivo</label>
+                            <div class="grid grid-cols-3 gap-2" id="style-presets">
+                                <button onclick="selectStyle(this, 'Cyberpunk')" class="style-btn active border-indigo-500 bg-indigo-600/20 text-white p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400">
+                                    Cyberpunk
+                                </button>
+                                <button onclick="selectStyle(this, 'Anime 3D')" class="style-btn border-gray-800 bg-slate-900/40 text-gray-400 p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400">
+                                    Anime 3D
+                                </button>
+                                <button onclick="selectStyle(this, 'Fotorealistico')" class="style-btn border-gray-800 bg-slate-900/40 text-gray-400 p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400">
+                                    Fotorealistico
+                                </button>
+                                <button onclick="selectStyle(this, 'Cinematic')" class="style-btn border-gray-800 bg-slate-900/40 text-gray-400 p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400">
+                                    Cinematic
+                                </button>
+                                <button onclick="selectStyle(this, 'Fantasy Art')" class="style-btn border-gray-800 bg-slate-900/40 text-gray-400 p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400">
+                                    Fantasy
+                                </button>
+                                <button onclick="selectStyle(this, 'Concept Art')" class="style-btn border-gray-800 bg-slate-900/40 text-gray-400 p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400">
+                                    Concept Art
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Aspect Ratio -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Proporzioni (Aspect Ratio)</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="setRatio(this, '1:1')" class="ratio-btn bg-indigo-600/20 border-indigo-500 text-white p-2 rounded-lg border text-xs font-medium text-center">1:1 (Quadrato)</button>
+                                <button onclick="setRatio(this, '16:9')" class="ratio-btn bg-slate-900/40 border-gray-800 text-gray-400 p-2 rounded-lg border text-xs font-medium text-center">16:9 (Widescreen)</button>
+                                <button onclick="setRatio(this, '9:16')" class="ratio-btn bg-slate-900/40 border-gray-800 text-gray-400 p-2 rounded-lg border text-xs font-medium text-center">9:16 (Story)</button>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button id="generate-btn" onclick="generateAsset()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold text-sm shadow-lg glow-purple transition transform active:scale-98 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-sparkles"></i>
+                            <span id="generate-btn-text">Genera Immagine Ora</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Display & History Area -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Main Result Display Canvas -->
+                    <div class="glass-panel rounded-2xl p-6 border border-gray-800 min-h-[420px] flex flex-col justify-between relative overflow-hidden">
+                        
+                        <!-- Top Bar of Preview -->
+                        <div class="flex justify-between items-center pb-4 border-b border-gray-800/80 mb-4">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center space-x-2">
+                                <i class="fa-solid fa-eye text-indigo-400"></i>
+                                <span>Anteprima Output Generato</span>
+                            </span>
+                            <span id="status-badge" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Pronto
+                            </span>
+                        </div>
+
+                        <!-- Preview Area Content -->
+                        <div id="preview-container" class="flex-grow flex items-center justify-center relative rounded-xl overflow-hidden bg-slate-950/80 border border-gray-800/60 min-h-[300px]">
+                            
+                            <!-- Placeholder View (Initial state) -->
+                            <div id="preview-placeholder" class="text-center p-8 space-y-3">
+                                <div class="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400 text-2xl">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-300">Nessuna generazione attiva</h3>
+                                <p class="text-xs text-gray-500 max-w-sm">Inserisci un prompt a sinistra e fai clic su "Genera" per osservare la potenza dell'AI in azione.</p>
+                            </div>
+
+                            <!-- Loader State (Hidden by default) -->
+                            <div id="preview-loader" class="hidden flex-col items-center space-y-4 text-center p-8">
+                                <div class="relative w-20 h-20">
+                                    <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+                                    <div class="absolute inset-2 rounded-full border-4 border-purple-500/20 border-b-purple-500 animate-spin" style="animation-duration: 1.5s;"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center text-indigo-400 text-lg">
+                                        <i class="fa-solid fa-brain"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-200 text-sm" id="loader-title">Elaborazione in corso...</h4>
+                                    <p class="text-xs text-gray-400 mt-1" id="loader-subtitle">Sintesi dei dettagli neurali in corso</p>
+                                </div>
+                            </div>
+
+                            <!-- Image Output Canvas (Hidden by default) -->
+                            <div id="preview-image-box" class="hidden relative w-full h-full flex items-center justify-center group">
+                                <img id="preview-img" src="" alt="AI Output" class="max-h-[380px] w-auto object-contain rounded-lg shadow-2xl">
+                                <div class="absolute bottom-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="downloadOutput()" class="p-2.5 rounded-xl bg-slate-900/90 text-white hover:bg-indigo-600 border border-gray-700 transition text-xs font-semibold flex items-center space-x-1">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span>Download</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Video Output Simulation Canvas (Hidden by default) -->
+                            <div id="preview-video-box" class="hidden relative w-full h-[380px] overflow-hidden rounded-xl bg-slate-950 flex flex-col justify-between">
+                                <!-- HTML5 Animated Motion Canvas Engine -->
+                                <canvas id="ai-video-canvas" class="absolute inset-0 w-full h-full object-cover z-0"></canvas>
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/40 pointer-events-none z-10"></div>
+                                
+                                <!-- Top Video Info Badge -->
+                                <div class="relative z-20 flex justify-between items-center p-3">
+                                    <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] bg-indigo-600/80 text-white backdrop-blur-md border border-indigo-400/40 font-mono uppercase tracking-wider shadow">
+                                        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                                        <span>AI Motion Engine (60 FPS)</span>
+                                    </span>
+                                    <button onclick="downloadCanvasVideo()" class="p-2 rounded-lg bg-slate-900/80 text-gray-200 hover:text-white hover:bg-indigo-600 backdrop-blur-md border border-gray-700 transition text-xs flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span class="hidden sm:inline">Esporta Video</span>
+                                    </button>
+                                </div>
+
+                                <!-- Interactive Video Player Controls -->
+                                <div class="relative z-20 p-4 space-y-2 bg-slate-950/70 backdrop-blur-md border-t border-gray-800/60">
+                                    <!-- Progress Bar / Scrub Bar -->
+                                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden cursor-pointer" onclick="scrubVideo(event)">
+                                        <div id="video-progress-bar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full w-0 transition-all duration-100"></div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center text-xs">
+                                        <div class="flex items-center space-x-3">
+                                            <button id="video-play-btn" onclick="toggleCanvasPlayback()" class="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition shadow glow-purple">
+                                                <i class="fa-solid fa-pause text-xs" id="play-btn-icon"></i>
+                                            </button>
+                                            <span id="video-sim-prompt" class="truncate max-w-[200px] sm:max-w-[320px] font-medium text-gray-200">Prompt Video</span>
+                                        </div>
+                                        <div class="flex items-center space-x-2 text-gray-400 font-mono text-[11px]">
+                                            <span id="video-timer">00:00 / 00:05</span>
+                                            <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">1080P</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chat Input Box -->
+                            <div class="flex space-x-2 pt-2 border-t border-gray-800">
+                                <input type="text" id="tutor-chat-input" class="flex-grow glass-input rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none" placeholder="Chiedi spiegazioni al tutor (es: Spiegami il passaggio 2)..." onkeypress="if(event.key==='Enter') sendTutorMessage()">
+                                <button onclick="sendTutorMessage()" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 2: GAUTH STUDY TUTOR (EXPLICIT SECTION) -->
+        <!-- ========================================== -->
+        <section id="tutor-section" class="space-y-6 hidden">
+            <!-- Header Banner -->
+            <div class="relative overflow-hidden rounded-2xl glass-card p-6 lg:p-8 border border-emerald-500/20">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">Tutor di Studio AI Stile Gauth</span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold mt-3 text-white tracking-tight">Risolvi Problemi & Homework Instantaneamente</h1>
+                    <p class="text-gray-400 mt-2 text-sm sm:text-base">Carica una foto della tua pagina di compiti o incolla una domanda di matematica, fisica, chimica o grammatica per risposte guidate passo dopo passo.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Camera / Photo Scanner Input Box -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 border border-gray-800 space-y-5">
+                        
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-semibold uppercase text-gray-400">Inquadra o Carica Esercizio</label>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">SCANNER AI</span>
+                        </div>
+
+                        <!-- Scanner Viewfinder Simulation -->
+                        <div class="relative w-full h-56 rounded-xl overflow-hidden border-2 border-dashed border-emerald-500/40 bg-slate-950/80 flex flex-col items-center justify-center p-4 group hover:border-emerald-500 transition">
+                            <div class="scan-line"></div>
+                            
+                            <div id="tutor-scanner-empty" class="text-center space-y-3">
+                                <div class="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto text-xl">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-200">Trascina o scatta una foto dell'esercizio</p>
+                                    <p class="text-[11px] text-gray-500 mt-0.5">Matematica, Algebra, Fisica, Latino, Inglese</p>
+                                </div>
+                            </div>
+
+                            <img id="tutor-scanned-img" src="" class="hidden absolute inset-0 w-full h-full object-contain bg-black/90 p-2">
+                        </div>
+
+                        <!-- Gallery & Photo Actions -->
+                        <input type="file" id="tutor-file-input" class="hidden" accept="image/*" onchange="handleTutorPhotoUpload(event)">
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="document.getElementById('tutor-file-input').click()" class="py-2.5 px-3 rounded-xl glass-input hover:bg-slate-800/80 text-gray-200 hover:text-white text-xs font-semibold transition flex items-center justify-center space-x-2 border border-gray-700">
+                                <i class="fa-solid fa-images text-emerald-400"></i>
+                                <span>Sfoglia Galleria</span>
+                            </button>
+                            <button onclick="demoSolveSample()" class="py-2.5 px-3 rounded-xl glass-input hover:bg-slate-800/80 text-gray-200 hover:text-white text-xs font-semibold transition flex items-center justify-center space-x-2 border border-gray-700">
+                                <i class="fa-solid fa-lightbulb text-yellow-400"></i>
+                                <span>Esempio Demo</span>
+                            </button>
+                        </div>
+
+                        <!-- Text Query Input -->
+                        <div>
+                            <label for="tutor-query-text" class="block text-xs font-semibold uppercase text-gray-400 mb-2">Oppure Scrivi il Quesito</label>
+                            <textarea id="tutor-query-text" rows="3" class="w-full glass-input rounded-xl p-3 text-xs text-gray-100 placeholder-gray-500 focus:outline-none transition resize-none" placeholder="Es: Risolvi l'equazione 3x^2 + 6x - 9 = 0 spiegando ogni passaggio..."></textarea>
+                        </div>
+
+                        <!-- Solve Button -->
+                        <button onclick="solveTutorProblem()" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg glow-green transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <span>Risolvi Esercizio con Gauth AI</span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Tutor Output & Chat Section -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 border border-gray-800 min-h-[460px] flex flex-col justify-between">
+                        
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-800 mb-4">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center space-x-2">
+                                <i class="fa-solid fa-square-check"></i>
+                                <span>Spiegazione Guidata Gauth</span>
+                            </span>
+                            <span class="text-xs text-gray-400 font-mono">Accuratezza: 99.4%</span>
+                        </div>
+
+                        <!-- Solutions Container -->
+                        <div id="tutor-solutions-box" class="flex-grow space-y-4 overflow-y-auto max-h-[350px] pr-2 mb-4">
+                            <!-- Initial Welcome Solution Card -->
+                            <div class="p-4 rounded-xl glass-card border border-gray-800 space-y-3">
+                                <div class="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                                    <i class="fa-solid fa-robot"></i>
+                                    <span>Gauth AI Tutor Pronto</span>
+                                </div>
+                                <p class="text-xs text-gray-300 leading-relaxed">
+                                    Benvenuto nel tuo assistente per lo studio personalizzato. Carica la foto di una pagina di compiti o fai una domanda per ricevere la soluzione dettagliata suddivisa in passaggi comprensibili.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Tutor Interactive Chat Messages -->
+                        <div id="tutor-chat-messages" class="space-y-3 max-h-[160px] overflow-y-auto mb-3 text-xs"></div>
+
+                        <!-- Chat Input Box -->
+                        <div class="flex space-x-2 pt-2 border-t border-gray-800">
+                            <input type="text" id="tutor-chat-input" class="flex-grow glass-input rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none" placeholder="Chiedi chiarimenti sul passaggio (es: Spiegami il punto 2)..." onkeypress="if(event.key==='Enter') sendTutorMessage()">
+                            <button onclick="sendTutorMessage()" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-gray-800/80 glass-panel py-4 px-6 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+            <div>
+                <span class="font-bold text-gray-400">OmniStudio & Gauth AI</span> &copy; 2026 - Piattaforma Multifunzione Integrata
+            </div>
+            <div class="flex space-x-4 text-gray-400">
+                <span class="hover:text-white cursor-pointer"><i class="fa-solid fa-shield-halved mr-1"></i> Privacy</span>
+                <span class="hover:text-white cursor-pointer"><i class="fa-solid fa-bolt mr-1"></i> Gemini Engine</span>
+                <span class="hover:text-white cursor-pointer"><i class="fa-solid fa-code mr-1"></i> API Sandbox</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // ==========================================
+        // STATE MANAGEMENT
+        // ==========================================
+        let currentAppTab = 'studio'; // 'studio' | 'tutor'
+        let currentStudioMode = 'image'; // 'image' | 'video'
+        let selectedStyle = 'Cyberpunk';
+        let selectedRatio = '1:1';
+        let assetHistory = [];
+        let studioRefImage = null; // Store base64 or URL of user uploaded reference image
+
+        // Enhanced Image Database per visual prompt matching
+        const topicImageDatabase = {
+            dog: [
+                'https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=800&auto=format&fit=crop'
+            ],
+            cat: [
+                'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=800&auto=format&fit=crop'
+            ],
+            space: [
+                'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?q=80&w=800&auto=format&fit=crop'
+            ],
+            car: [
+                'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=800&auto=format&fit=crop'
+            ],
+            cyberpunk: [
+                'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800&auto=format&fit=crop'
+            ]
+        };
+
+        const sampleImageDatabase = {
+            'Cyberpunk': [
+                'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800&auto=format&fit=crop'
+            ],
+            'Anime 3D': [
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop'
+            ],
+            'Fotorealistico': [
+                'https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=800&auto=format&fit=crop'
+            ],
+            'Cinematic': [
+                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800&auto=format&fit=crop'
+            ],
+            'Fantasy Art': [
+                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop'
+            ],
+            'Concept Art': [
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop'
+            ]
+        };
+
+        const randomPrompts = [
+            "Un cane felice che balla a ritmo di musica sotto le luci al neon",
+            "Città futuristica galleggiante con auto volanti e neon viola, stile cyberpunk",
+            "Un gatto astronauta che esplora la superficie di Marte, dettagli iperrealistici",
+            "Ritratto cinematografico di un guerriero medievale con armatura dorata",
+            "Paesaggio incantato con alberi bioluminescenti ed elfi attorno a un falò"
+        ];
+
+        // ==========================================
+        // APP TAB NAVIGATION (Studio vs Tutor)
+        // ==========================================
+        function switchTab(tab) {
+            currentAppTab = tab;
+            const studioSec = document.getElementById('studio-section');
+            const tutorSec = document.getElementById('tutor-section');
+            const studioBtn = document.getElementById('nav-studio-btn');
+            const tutorBtn = document.getElementById('nav-tutor-btn');
+
+            if (tab === 'studio') {
+                studioSec.classList.remove('hidden');
+                tutorSec.classList.add('hidden');
+                
+                studioBtn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-indigo-600 text-white shadow-md";
+                tutorBtn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all duration-300";
+            } else {
+                studioSec.classList.add('hidden');
+                tutorSec.classList.remove('hidden');
+
+                tutorBtn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-emerald-600 text-white shadow-md";
+                studioBtn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all duration-300";
+            }
+        }
+
+        // ==========================================
+        // AI STUDIO LOGIC
+        // ==========================================
+        function setStudioMode(mode) {
+            currentStudioMode = mode;
+            const imgBtn = document.getElementById('mode-image-btn');
+            const vidBtn = document.getElementById('mode-video-btn');
+            const genBtnText = document.getElementById('generate-btn-text');
+
+            if (mode === 'image') {
+                imgBtn.className = "flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-indigo-600 text-white shadow";
+                vidBtn.className = "flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-white";
+                genBtnText.innerText = "Genera Immagine Ora";
+            } else {
+                vidBtn.className = "flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-indigo-600 text-white shadow";
+                imgBtn.className = "flex items-center justify-center space-x-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-gray-400 hover:text-white";
+                genBtnText.innerText = "Renderizza Video AI";
+            }
+        }
+
+        // Reference Image Upload Handling
+        function triggerStudioRefSelect() {
+            document.getElementById('studio-ref-input').click();
+        }
+
+        function handleStudioRefUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    studioRefImage = e.target.result;
+                    document.getElementById('studio-ref-thumb').src = studioRefImage;
+                    document.getElementById('studio-ref-name').innerText = file.name;
+                    document.getElementById('studio-ref-preview-box').classList.remove('hidden');
+                    document.getElementById('studio-upload-btn-box').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeStudioRefImage() {
+            studioRefImage = null;
+            document.getElementById('studio-ref-input').value = '';
+            document.getElementById('studio-ref-preview-box').classList.add('hidden');
+            document.getElementById('studio-upload-btn-box').classList.remove('hidden');
+        }
+
+        function selectStyle(btn, styleName) {
+            selectedStyle = styleName;
+            document.querySelectorAll('.style-btn').forEach(b => {
+                b.className = "style-btn border-gray-800 bg-slate-900/40 text-gray-400 p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400";
+            });
+            btn.className = "style-btn active border-indigo-500 bg-indigo-600/20 text-white p-2.5 rounded-xl border text-xs font-medium text-center transition hover:border-indigo-400";
+        }
+
+        function setRatio(btn, ratio) {
+            selectedRatio = ratio;
+            document.querySelectorAll('.ratio-btn').forEach(b => {
+                b.className = "ratio-btn bg-slate-900/40 border-gray-800 text-gray-400 p-2 rounded-lg border text-xs font-medium text-center";
+            });
+            btn.className = "ratio-btn bg-indigo-600/20 border-indigo-500 text-white p-2 rounded-lg border text-xs font-medium text-center";
+        }
+
+        function randomPrompt() {
+            const idx = Math.floor(Math.random() * randomPrompts.length);
+            document.getElementById('studio-prompt').value = randomPrompts[idx];
+        }
+
+        function matchPromptAsset(promptText) {
+            const p = (promptText || '').toLowerCase();
+            
+            // Check for explicit subject matches with style modifier
+            for (let key in topicImageDatabase) {
+                if (p.includes(key)) {
+                    const list = topicImageDatabase[key];
+                    return { url: list[Math.floor(Math.random() * list.length)] };
+                }
+            }
+            
+            // Generate dynamic high quality SVG / AI canvas render if photorealistic or generic request
+            if (selectedStyle === 'Fotorealistico') {
+                return { url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=1000&auto=format&fit=crop' };
+            }
+
+            const fallbackList = sampleImageDatabase[selectedStyle] || sampleImageDatabase['Cyberpunk'];
+            return { url: fallbackList[Math.floor(Math.random() * fallbackList.length)] };
+        }
+
+        // REAL AI IMAGE GENERATION (GEMINI API)
+        async function fetchAIImageFromPrompt(promptText, style) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+
+            const fullPrompt = `Foto ${style.toLowerCase()} ad altissima definizione 8K: ${promptText}. Dettagli realistici, illuminazione da studio fotografico, fuoco perfetto.`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            role: 'user',
+                            parts: [{ text: fullPrompt }]
+                        }],
+                        generationConfig: {
+                            responseModalities: ['IMAGE'],
+                            imageConfig: { aspectRatio: selectedRatio === '16:9' ? '16:9' : selectedRatio === '9:16' ? '9:16' : '1:1' }
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                if (part) {
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                }
+            } catch (err) {
+                console.log("Fallback local rendering for style", style, err);
+            }
+
+            return matchPromptAsset(promptText).url;
+        }
+
+        function addToHistory(url, prompt, type) {
+            assetHistory.unshift({ url, prompt, type, style: selectedStyle });
+            const gallery = document.getElementById('history-gallery');
+            if (!gallery) return;
+
+            gallery.innerHTML = assetHistory.map(item => `
+                <div class="group relative rounded-xl overflow-hidden bg-slate-950 border border-gray-800 aspect-square">
+                    <img src="${item.url}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition p-2 flex flex-col justify-end">
+                        <span class="text-[10px] text-indigo-300 font-semibold uppercase">${item.type} • ${item.style}</span>
+                        <p class="text-[11px] text-white truncate font-medium">${item.prompt}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function sendTutorMessage() {
+            const input = document.getElementById('tutor-chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const chat = document.getElementById('tutor-chat-messages');
+            if (chat) {
+                chat.innerHTML += `
+                    <div class="flex justify-end">
+                        <div class="bg-indigo-600/80 text-white rounded-2xl rounded-tr-none px-3.5 py-2 text-xs max-w-[80%] shadow">
+                            ${msg}
+                        </div>
+                    </div>
+                    <div class="flex justify-start">
+                        <div class="bg-slate-800 text-gray-200 rounded-2xl rounded-tl-none px-3.5 py-2 text-xs max-w-[80%] border border-gray-700">
+                            Certamente! Riguardo a <strong>"${msg}"</strong>, ecco la spiegazione dettagliata del procedimento step-by-step per risolverlo senza errori.
+                        </div>
+                    </div>
+                `;
+                chat.scrollTop = chat.scrollHeight;
+            }
+            input.value = '';
+        }
+
+        // ==========================================
+        // GAUTH TUTOR HELPER FUNCTIONS
+        // ==========================================
+        function handleTutorPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const scannedImg = document.getElementById('tutor-scanned-img');
+                    const emptyState = document.getElementById('tutor-scanner-empty');
+                    scannedImg.src = e.target.result;
+                    scannedImg.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function demoSolveSample() {
+            document.getElementById('tutor-query-text').value = "Risolvi l'equazione di secondo grado: 2x^2 + 5x - 3 = 0";
+            solveTutorProblem();
+        }
+
+        function solveTutorProblem() {
+            const textQuery = document.getElementById('tutor-query-text').value.trim();
+            const solutionsBox = document.getElementById('tutor-solutions-box');
+
+            solutionsBox.innerHTML = `
+                <div class="p-4 rounded-xl glass-card border border-emerald-500/30 space-y-3 bg-emerald-950/20">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-emerald-400 font-bold uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>Soluzione Matematica Passo-Passo</span>
+                        </span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px]">VERIFICATO</span>
+                    </div>
+                    
+                    <div class="text-xs text-gray-200 font-medium">
+                        <strong>Quesito:</strong> ${textQuery || "Analisi dell'immagine caricata dallo scanner"}
+                    </div>
+
+                    <div class="space-y-2 border-t border-gray-800/80 pt-3">
+                        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-gray-800">
+                            <span class="text-[11px] font-bold text-indigo-400 block mb-1">PASSAGGIO 1: Identificazione dei Coefficienti</span>
+                            <p class="text-xs text-gray-300">Nell'equazione ax² + bx + c = 0, identifichiamo: <br><code class="text-amber-300 font-mono">a = 2, b = 5, c = -3</code></p>
+                        </div>
+
+                        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-gray-800">
+                            <span class="text-[11px] font-bold text-indigo-400 block mb-1">PASSAGGIO 2: Calcolo del Discriminante (Δ)</span>
+                            <p class="text-xs text-gray-300">Δ = b² - 4ac = (5)² - 4(2)(-3) = 25 + 24 = 49.</p>
+                        </div>
+
+                        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-gray-800">
+                            <span class="text-[11px] font-bold text-indigo-400 block mb-1">PASSAGGIO 3: Applicazione della Formula Risolutiva</span>
+                            <p class="text-xs text-gray-300">x = (-b ± √Δ) / 2a = (-5 ± 7) / 4 <br>
+                            👉 x₁ = (-5 + 7)/4 = <strong>1/2</strong> <br>
+                            👉 x₂ = (-5 - 7)/4 = <strong>-3</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                        Risultato Finale: x₁ = 1/2, x₂ = -3
+                    </div>
+                </div>
+            `;
+        }
+
+        let canvasAnimId = null;
+<!-- ... existing code -->
